@@ -18,11 +18,17 @@ connectToDb((err) => {
 });
 
 app.get("/books", (req, res) => {
+  const page = req.query.p || 0;
+  const bookPerPage = 10;
+
+
   let books = [];
 
   db.collection("books")
     .find()
     .sort({ author: 1 })
+    .skip(page * bookPerPage)
+    .limit(bookPerPage)
     .forEach((book) => books.push(book))
     .then(() => {
       res.status(200).json(books);
@@ -70,6 +76,23 @@ app.delete("/books/:id", (req, res) => {
         })
         .catch((err) => {
           res.status(500).json({ error: "Could not delete the document" });
+        });
+  } else {
+    res.status(500).json({ error: "Not valid document id" });
+  }
+});
+
+app.patch("/books/:id", (req, res) => {
+  const updates = req.body;
+
+  if(ObjectId.isValid(req.params.id)) {
+    db.collection("books")
+      .updateOne({ _id: new ObjectId(req.params.id) }, { $set: updates })
+        .then((result) => {
+          res.status(200).json(result);
+        })
+        .catch((err) => {
+          res.status(500).json({ error: "Could not update the document" });
         });
   } else {
     res.status(500).json({ error: "Not valid document id" });
